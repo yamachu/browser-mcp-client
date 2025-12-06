@@ -1,0 +1,7 @@
+{
+  "name": "shared-types",
+  "author": "yamachu",
+  "license": "MIT",
+  "packageManager": "pnpm@10.17.1",
+  "types": "src/index.ts"
+}

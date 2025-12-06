@@ -1,0 +1,7 @@
+{
+  "name": "",
+  "description": "反転した文字を返すNativeHost",
+  "path": "",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://REPLACE_ME/"]
+}

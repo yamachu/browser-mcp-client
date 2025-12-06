@@ -1,0 +1,7 @@
+packages:
+  - browser-extension
+  - native-host
+  - shared-types
+
+onlyBuiltDependencies:
+  - esbuild

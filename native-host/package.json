@@ -1,0 +1,17 @@
+{
+  "name": "native-host",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "esbuild src/index.ts --outfile=dist/index.cjs --bundle --platform=node --format=cjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "author": "yamachu",
+  "license": "MIT",
+  "packageManager": "pnpm@10.17.1",
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "esbuild": "0.27.1",
+    "postject": "1.0.0-alpha.6",
+    "shared-types": "link:../shared-types"
+  }
+}
