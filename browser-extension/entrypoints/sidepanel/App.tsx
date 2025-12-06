@@ -1,6 +1,8 @@
-import { useActionState } from "react";
+import { JWT_SNIFFER_HOSTS } from "@/src/Contract";
 import { sendTypedMessage } from "@/types/messaging";
+import { useActionState } from "react";
 import "./App.css";
+import { useJwt } from "./hooks/useJwt";
 
 type State = {
   result: string;
@@ -41,10 +43,26 @@ function App() {
     result: "",
     error: null,
   });
+  const [currentHost, setCurrentHost] = useState(JWT_SNIFFER_HOSTS.at(0) || "");
+  const jwt = useJwt(currentHost);
 
   return (
     <div className="app">
       <h1>String Reverser</h1>
+      <p className="jwt-display">
+        JWT for {currentHost}: {jwt ?? "<none>"}
+      </p>
+      <select
+        value={currentHost}
+        onChange={(e) => setCurrentHost(e.target.value)}
+        className="host-select"
+      >
+        {JWT_SNIFFER_HOSTS.map((host) => (
+          <option key={host} value={host}>
+            {host}
+          </option>
+        ))}
+      </select>
       <p className="description">
         Native Messaging を使用して文字列を反転します
       </p>

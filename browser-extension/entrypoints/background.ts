@@ -1,15 +1,35 @@
+import { JWT_SNIFFER_URI, NATIVE_HOST_NAME } from "@/src/Contract";
+import { saveJwt } from "@/src/utils/storage";
 import type { ExtensionMessage, MessageResponseMap } from "@/types/messaging";
 import {
   type ToExtensionReverseResponse,
   type ToNativeReverseMessage,
 } from "shared-types";
 
-const NATIVE_HOST_NAME = import.meta.env.VITE_NATIVE_HOST_NAME;
-
 export default defineBackground(() => {
   console.log("Hello background!", { id: browser.runtime.id });
 
   browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+
+  browser.webRequest.onBeforeSendHeaders.addListener(
+    (details) => {
+      const host = new URL(details.url).host;
+      const authHeader = details.requestHeaders?.find(
+        (header) => header.name.toLowerCase() === "authorization"
+      );
+
+      if (authHeader?.value?.startsWith("Bearer ")) {
+        const token = authHeader.value.slice("Bearer ".length);
+        saveJwt(host, token);
+      }
+
+      return {};
+    },
+    {
+      urls: JWT_SNIFFER_URI.map((uri) => `${uri}/*`),
+    },
+    ["requestHeaders"]
+  );
 
   // https://developer.mozilla.org/ja/docs/Mozilla/Add-ons/WebExtensions/API/runtime/onMessage#sendresponse
   browser.runtime.onMessage.addListener(

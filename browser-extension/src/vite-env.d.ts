@@ -4,6 +4,7 @@ interface ViteTypeOptions {
 
 interface ImportMetaEnv {
   readonly VITE_NATIVE_HOST_NAME: string;
+  readonly VITE_JWT_SNIFFER_URI: string; // 'https://example.com,https://sub.example.com'
 }
 
 interface ImportMeta {
