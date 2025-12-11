@@ -9,12 +9,11 @@
   "license": "MIT",
   "packageManager": "pnpm@10.17.1",
   "dependencies": {
-    "@langchain/anthropic": "0.3.33",
-    "@langchain/core": "0.3.78",
-    "@langchain/langgraph": "0.4.9",
-    "@langchain/mcp-adapters": "0.6.0",
-    "@langchain/openai": "0.6.16",
-    "langchain": "0.3.36",
+    "@ai-sdk/anthropic": "2.0.54",
+    "@ai-sdk/mcp": "0.0.11",
+    "@ai-sdk/openai": "2.0.80",
+    "@modelcontextprotocol/sdk": "1.24.3",
+    "ai": "5.0.110",
     "native-messaging": "link:../native-messaging",
     "zod": "catalog:"
   },
