@@ -13,6 +13,7 @@ const ChatEnv = z.object({
   API_BASE_URL: z.string(),
   PROVIDER: z.enum(["openai", "anthropic"]),
   MODEL: z.string(),
+  TOOLS: z.string().optional(),
 });
 
 function displayChatResponse(response: ToExtensionChatResponse): void {
@@ -101,11 +102,10 @@ async function interactiveMode(
           const apiBaseUrl = env.data.API_BASE_URL;
           const provider = env.data.PROVIDER;
           const model = env.data.MODEL;
+          const tools = env.data.TOOLS ? JSON.parse(env.data.TOOLS) : undefined;
 
           console.log(
-            `\nSending chat with provider: ${provider}, model: ${
-              model || "default"
-            }`
+            `\nSending chat with provider: ${provider}, model: ${model}`
           );
           client.sendMessage({
             action: "chat",
@@ -113,7 +113,8 @@ async function interactiveMode(
             jwt,
             apiBaseUrl,
             provider,
-            model: model!,
+            model,
+            tools,
           });
         } else if (trimmed.startsWith("raw ")) {
           const json = trimmed.slice(4);
@@ -199,6 +200,7 @@ async function main(): Promise<void> {
           const apiBaseUrl = env.data.API_BASE_URL;
           const provider = env.data.PROVIDER;
           const model = env.data.MODEL;
+          const tools = env.data.TOOLS ? JSON.parse(env.data.TOOLS) : undefined;
 
           console.log(`Provider: ${provider}, Model: ${model || "default"}`);
           client.sendMessage({
@@ -207,7 +209,8 @@ async function main(): Promise<void> {
             jwt,
             apiBaseUrl,
             provider,
-            model: model!,
+            model,
+            tools,
           });
 
           // Wait for streaming to complete
