@@ -1,7 +1,7 @@
 include ../browser-extension/.env
 export
 
-SRCS = $(wildcard src/*.ts)
+SRCS = $(wildcard src/*.ts src/*.mts)
 ifeq ($(OS),Windows_NT)
 	EXECUTABLE = dist/index.exe
 	POSTJECT_OPTIONS =
