@@ -9,7 +9,13 @@
   "license": "MIT",
   "packageManager": "pnpm@10.17.1",
   "dependencies": {
-    "native-messaging": "link:../native-messaging"
+    "@langchain/anthropic": "0.3.33",
+    "@langchain/core": "0.3.78",
+    "@langchain/langgraph": "0.4.9",
+    "@langchain/openai": "0.6.16",
+    "langchain": "0.3.36",
+    "native-messaging": "link:../native-messaging",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@types/node": "24.10.1",

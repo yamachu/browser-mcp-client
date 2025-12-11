@@ -3,15 +3,96 @@ import {
   toBufferedMessage,
   writeMessage,
 } from "native-messaging/src/index.js";
-import type { ToExtensionResponse, ToNativeMessage } from "shared-types";
+import type {
+  ToExtensionChatResponse,
+  ToExtensionResponse,
+  ToNativeChatMessage,
+  ToNativeMessage,
+} from "shared-types";
+import { runAgent } from "./agent.mjs";
+
+function generateMessageId(): string {
+  return crypto.randomUUID();
+}
+
+function sendChatResponse(response: ToExtensionChatResponse): void {
+  writeMessage(toBufferedMessage(response));
+}
+
+async function handleChatMessage(message: ToNativeChatMessage): Promise<void> {
+  const messageId = generateMessageId();
+
+  try {
+    // Start signal
+    sendChatResponse({
+      type: "thinking",
+      messageId,
+    });
+
+    const config = {
+      provider: message.provider,
+      apiBaseUrl: message.apiBaseUrl,
+      jwt: message.jwt,
+      model: message.model,
+    };
+
+    for await (const event of runAgent(config, message.prompt)) {
+      switch (event.type) {
+        case "tool_call":
+          sendChatResponse({
+            type: "tool_call",
+            messageId,
+            toolName: event.toolName,
+            toolArgs: event.toolArgs,
+          });
+          break;
+        case "tool_result":
+          sendChatResponse({
+            type: "tool_result",
+            messageId,
+            toolName: event.toolName,
+            result: event.result,
+          });
+          break;
+        case "token":
+          sendChatResponse({
+            type: "token",
+            messageId,
+            token: event.token,
+          });
+          break;
+        case "final":
+          break;
+        default: {
+          const _ = event satisfies never;
+        }
+      }
+    }
+
+    sendChatResponse({
+      type: "final",
+      messageId,
+    });
+  } catch (error) {
+    sendChatResponse({
+      type: "error",
+      messageId,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+}
 
 async function handleMessage(
   message: ToNativeMessage
-): Promise<ToExtensionResponse> {
+): Promise<ToExtensionResponse | null> {
   switch (message.action) {
     case "reverse":
       const reversed = reverseString(message.text);
       return { reversed };
+
+    case "chat":
+      await handleChatMessage(message);
+      return null;
 
     default:
       return { error: "Invalid action or missing text" };
