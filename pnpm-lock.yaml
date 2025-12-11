@@ -88,6 +88,9 @@ importers:
       shared-types:
         specifier: link:../shared-types
         version: link:../shared-types
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: 24.10.1

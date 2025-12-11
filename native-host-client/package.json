@@ -10,7 +10,8 @@
   "packageManager": "pnpm@10.17.1",
   "dependencies": {
     "native-messaging": "link:../native-messaging",
-    "shared-types": "link:../shared-types"
+    "shared-types": "link:../shared-types",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "24.10.1"
