@@ -150,6 +150,11 @@ function extractTokensFromContent(content: unknown): string[] {
   return tokens;
 }
 
+// TODO: Agentを生成する箇所と、実行する箇所を分けるたい
+// 目的は以下
+// - 同一セッションを引き継いで実行できるようにするため
+// - AbortControllerを挟みやすくするため
+// そのため、呼び出し元にAgentインスタンスを管理させる必要があるため、Class化した方が見通し良くなるかもしれない
 export async function* runAgent(
   config: AgentConfig,
   prompt: string
