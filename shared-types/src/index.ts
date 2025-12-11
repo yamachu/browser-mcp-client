@@ -13,6 +13,7 @@ export interface ToNativeChatMessage extends ToNativeBaseMessage<"chat"> {
   apiBaseUrl: string;
   provider: "openai" | "anthropic";
   model: string;
+  tools?: Array<Record<string, unknown>>;
 }
 
 export type ToNativeMessage = ToNativeReverseMessage | ToNativeChatMessage;

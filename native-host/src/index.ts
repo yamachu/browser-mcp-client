@@ -36,7 +36,9 @@ async function handleChatMessage(message: ToNativeChatMessage): Promise<void> {
       model: message.model,
     };
 
-    for await (const event of runAgent(config, message.prompt)) {
+    const tools = message.tools;
+
+    for await (const event of runAgent(config, message.prompt, tools)) {
       switch (event.type) {
         case "tool_call":
           sendChatResponse({

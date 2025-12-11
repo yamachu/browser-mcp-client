@@ -1,15 +1,11 @@
-import { ChatAnthropic } from "@langchain/anthropic";
-import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import {
-  HumanMessage,
-  isAIMessageChunk,
-  isBaseMessageChunk,
-  isToolMessage,
-  type BaseMessageChunk,
-} from "@langchain/core/messages";
-import { tool } from "@langchain/core/tools";
-import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import { ChatOpenAI } from "@langchain/openai";
+  experimental_createMCPClient,
+  experimental_MCPClient,
+} from "@ai-sdk/mcp";
+import { Experimental_StdioMCPTransport } from "@ai-sdk/mcp/mcp-stdio";
+import { createOpenAI } from "@ai-sdk/openai";
+import { stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
 
 function debug(...args: unknown[]): void {
@@ -31,21 +27,22 @@ export type AgentEvent =
   | { type: "final" };
 
 // とりあえず実験用のツールを2つ用意
-const reverseTool = tool(
-  async ({ targetString }): Promise<string> => {
+const reverseTool = tool({
+  description: "Reverse a given string",
+  inputSchema: z.object({
+    targetString: z.string().describe("The string to reverse"),
+  }),
+  execute: async ({ targetString }: { targetString: string }) => {
     return targetString.split("").reverse().join("");
   },
-  {
-    name: "reverse",
-    description: "Reverse a given string",
-    schema: z.object({
-      targetString: z.string().describe("The string to reverse"),
-    }),
-  }
-);
+});
 
-const calculatorTool = tool(
-  async ({ expression }): Promise<string> => {
+const calculatorTool = tool({
+  description: "Perform mathematical calculations",
+  inputSchema: z.object({
+    expression: z.string().describe("The mathematical expression to evaluate"),
+  }),
+  execute: async ({ expression }: { expression: string }) => {
     try {
       // 本当は危険なやつなので…実験が終わったら消す
       const result = Function(`"use strict"; return (${expression})`)();
@@ -54,100 +51,79 @@ const calculatorTool = tool(
       return "Error: Invalid expression";
     }
   },
-  {
-    name: "calculator",
-    description: "Perform mathematical calculations",
-    schema: z.object({
-      expression: z
-        .string()
-        .describe("The mathematical expression to evaluate"),
-    }),
+});
+
+const localTools = {
+  reverse: reverseTool,
+  calculator: calculatorTool,
+};
+
+async function loadMcpTools(userDefinedTools: Array<any> = []) {
+  const mcpClients: experimental_MCPClient[] = [];
+  const mcpTools: Awaited<ReturnType<experimental_MCPClient["tools"]>> = {};
+
+  for (const toolConfig of userDefinedTools) {
+    try {
+      if (
+        !(
+          toolConfig.transport === undefined || toolConfig.transport === "stdio"
+        )
+      ) {
+        debug("Unsupported transport:", toolConfig.transport);
+        continue;
+      }
+      const transport = new Experimental_StdioMCPTransport({
+        command: toolConfig.command,
+        args: toolConfig.args,
+      });
+
+      const client = await experimental_createMCPClient({
+        name: "browser-mcp-client",
+        version: "1.0.0",
+        capabilities: {},
+        transport,
+      });
+
+      mcpClients.push(client);
+
+      const toolsResult = await client.tools();
+
+      debug("Loaded MCP tools:", Object.keys(toolsResult));
+
+      for (const [toolName, mcpTool] of Object.entries(toolsResult)) {
+        mcpTools[toolName] = mcpTool;
+      }
+    } catch (error) {
+      debug("Failed to load MCP tool:", error);
+    }
   }
-);
 
-const tools = [reverseTool, calculatorTool];
+  return { mcpTools, mcpClients };
+}
 
-function createLLM(config: AgentConfig): BaseChatModel {
+function createLLM(config: AgentConfig) {
   const { provider, apiBaseUrl, jwt, model } = config;
 
   switch (provider) {
     case "anthropic":
-      return new ChatAnthropic({
-        modelName: model,
-        anthropicApiKey: jwt,
-        anthropicApiUrl: apiBaseUrl,
-        streaming: true,
-        clientOptions: {
-          defaultHeaders: {
-            Authorization: `Bearer ${jwt}`,
-          },
+      return createAnthropic({
+        apiKey: jwt,
+        baseURL: apiBaseUrl,
+        headers: {
+          authorization: `Bearer ${jwt}`,
         },
-      });
+      })(model);
     case "openai":
-      return new ChatOpenAI({
-        modelName: model,
-        openAIApiKey: jwt,
-        configuration: {
-          baseURL: apiBaseUrl,
-          defaultHeaders: {
-            Authorization: `Bearer ${jwt}`,
-          },
+      return createOpenAI({
+        apiKey: jwt,
+        baseURL: apiBaseUrl,
+        headers: {
+          authorization: `Bearer ${jwt}`,
         },
-        streaming: true,
-      });
+      })(model);
     default:
       throw new Error(`Unsupported provider: ${provider}`);
   }
-}
-function extractToolCallEvents(
-  msg: BaseMessageChunk
-): Array<{ toolName: string; toolArgs: string }> {
-  const events: Array<{ toolName: string; toolArgs: string }> = [];
-
-  if (!isAIMessageChunk(msg)) return events;
-
-  const toolCalls = msg.tool_calls ?? [];
-  for (const [i, toolCall] of toolCalls.entries()) {
-    let args = "";
-    // TODO: もうちょいいい感じに…
-    const maybeChunkArgs = JSON.stringify(toolCall.args) === "{}";
-    if (maybeChunkArgs) {
-      const chunkArgs = msg.tool_call_chunks?.at(i)?.args || "";
-      if (chunkArgs) args = chunkArgs;
-    } else {
-      args = JSON.stringify(toolCall.args || {});
-    }
-
-    events.push({ toolName: toolCall.name || "unknown", toolArgs: args });
-  }
-
-  return events;
-}
-
-function extractTokensFromContent(content: unknown): string[] {
-  const tokens: string[] = [];
-  if (!content) return tokens;
-
-  if (typeof content === "string") {
-    tokens.push(content);
-    return tokens;
-  }
-
-  if (Array.isArray(content)) {
-    for (const block of content) {
-      if (block && typeof block === "object" && "type" in block) {
-        if (
-          block.type === "text" &&
-          "text" in block &&
-          typeof block.text === "string"
-        ) {
-          tokens.push(block.text);
-        }
-      }
-    }
-  }
-
-  return tokens;
 }
 
 // TODO: Agentを生成する箇所と、実行する箇所を分けるたい
@@ -157,76 +133,63 @@ function extractTokensFromContent(content: unknown): string[] {
 // そのため、呼び出し元にAgentインスタンスを管理させる必要があるため、Class化した方が見通し良くなるかもしれない
 export async function* runAgent(
   config: AgentConfig,
-  prompt: string
+  prompt: string,
+  userDefinedTools?: Array<Record<string, unknown>>
 ): AsyncGenerator<AgentEvent> {
-  const llm = createLLM(config);
+  const model = createLLM(config);
 
-  const agent = createReactAgent({
-    llm,
-    tools,
-    prompt:
-      "You are a helpful assistant. Use the available tools to help answer the user's questions.",
-  });
+  const { mcpTools, mcpClients } = await loadMcpTools(userDefinedTools);
 
-  const stream = await agent.stream(
-    { messages: [new HumanMessage(prompt)] },
-    { streamMode: "messages" }
-  );
+  try {
+    const result = streamText({
+      model,
+      tools: {
+        ...localTools,
+        ...mcpTools,
+      },
+      stopWhen: stepCountIs(10), // 一旦10ステップで止める
+      messages: [{ role: "user", content: prompt }],
+      // TODO: abortSignal
+    });
 
-  let currentMessage: BaseMessageChunk | undefined = undefined;
-  let currentMessageId: string | undefined = undefined;
+    for await (const part of result.fullStream) {
+      debug("Received part:", part);
+      switch (part.type) {
+        // text-start, text-endは無視してtext-deltaだけ処理
+        case "text-delta":
+          yield { type: "token", token: part.text };
+          break;
 
-  for await (const chunk of stream) {
-    const [message] = chunk;
-    if (!message) continue;
-
-    // TODO: debug起動用のOptionを何かしらつける、今はdebugの実装をコメントアウトしている
-    debug(message);
-
-    if (currentMessageId !== message.id) {
-      if (
-        currentMessage &&
-        isAIMessageChunk(currentMessage) &&
-        (currentMessage.tool_calls?.length ?? 0) > 0
-      ) {
-        const toolEvents = extractToolCallEvents(currentMessage);
-        for (const ev of toolEvents) {
+        case "tool-call":
           yield {
             type: "tool_call",
-            toolName: ev.toolName,
-            toolArgs: ev.toolArgs,
+            toolName: part.toolName,
+            toolArgs: JSON.stringify(part.input),
           };
-        }
-      }
+          break;
 
-      currentMessageId = undefined;
-      currentMessage = undefined;
-    }
+        case "tool-result":
+          yield {
+            type: "tool_result",
+            toolName: part.toolName,
+            result: part.output,
+          };
+          break;
 
-    if (isBaseMessageChunk(message) && isAIMessageChunk(message)) {
-      if (currentMessageId !== message.id) {
-        currentMessageId = message.id;
-        currentMessage = message;
-      } else {
-        currentMessage = currentMessage!.concat(message);
-      }
-
-      const aiMessage = message;
-      const tokens = extractTokensFromContent(aiMessage.content);
-      for (const t of tokens) {
-        yield { type: "token", token: t };
+        case "error":
+          debug("Stream error:", part.error);
+          break;
       }
     }
 
-    if (isToolMessage(message)) {
-      const toolMessage = message;
-      yield {
-        type: "tool_result",
-        toolName: toolMessage.name || "unknown",
-        result: toolMessage.content,
-      };
+    yield { type: "final" };
+  } finally {
+    for (const client of mcpClients) {
+      try {
+        await client.close();
+      } catch (e) {
+        debug("Error closing MCP client:", e);
+      }
     }
   }
-
-  yield { type: "final" };
 }
