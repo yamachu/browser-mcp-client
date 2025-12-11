@@ -123,3 +123,11 @@ sequenceDiagram
     NH-->>BG: Final Event
     BG-->>SP: Final Event
 ```
+
+## パッケージ
+
+- [`browser-extension`](./browser-extension): Chrome Extension 本体
+- [`native-host`](./native-host): Native Messaging Host アプリケーション
+- [`native-host-client`](./native-host-client): Native Host と通信するためのデバッグ用クライアント実装
+- [`native-messaging`](./native-messaging): Native Messaging のプロトコルやユーティリティ実装
+- [`shared-types`](./shared-types): 各パッケージ間で共有するメッセージなどの型定義
