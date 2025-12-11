@@ -106,6 +106,7 @@ export default defineBackground(() => {
             apiBaseUrl: message.apiBaseUrl,
             provider: message.provider,
             model: message.model,
+            tools: message.tools,
           } satisfies ToNativeChatMessage);
 
           sendResponse({ success: true, messageId });

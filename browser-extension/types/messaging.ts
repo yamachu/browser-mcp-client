@@ -15,6 +15,7 @@ interface ChatMessage extends BaseMessageType<"CHAT"> {
   apiBaseUrl: string;
   provider: "openai" | "anthropic";
   model: string;
+  tools?: Array<Record<string, unknown>>;
 }
 
 export type ExtensionMessage = ReverseStringMessage | ChatMessage;
