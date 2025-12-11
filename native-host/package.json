@@ -12,6 +12,7 @@
     "@langchain/anthropic": "0.3.33",
     "@langchain/core": "0.3.78",
     "@langchain/langgraph": "0.4.9",
+    "@langchain/mcp-adapters": "0.6.0",
     "@langchain/openai": "0.6.16",
     "langchain": "0.3.36",
     "native-messaging": "link:../native-messaging",
