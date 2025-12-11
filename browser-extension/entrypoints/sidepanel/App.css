@@ -5,18 +5,54 @@
 }
 
 .app {
-  text-align: center;
+  text-align: left;
 }
 
 .app h1 {
   margin-bottom: 0.5rem;
   font-size: 1.5rem;
+  text-align: center;
 }
 
 .description {
   color: #666;
   font-size: 0.875rem;
   margin-bottom: 1.5rem;
+}
+
+.section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.section h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: #374151;
+}
+
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.settings-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.jwt-display {
+  font-size: 0.75rem;
+  color: #6b7280;
+  word-break: break-all;
+  margin: 0.5rem 0;
 }
 
 .form {
@@ -66,6 +102,22 @@
   cursor: not-allowed;
 }
 
+.cancel-button {
+  background-color: #ef4444;
+}
+
+.cancel-button:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.clear-button {
+  background-color: #6b7280;
+}
+
+.clear-button:hover:not(:disabled) {
+  background-color: #4b5563;
+}
+
 .error {
   padding: 0.75rem;
   background-color: #fee2e2;
@@ -83,7 +135,8 @@
   text-align: left;
 }
 
-.result h2 {
+.result h2,
+.result h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1rem;
   color: #16a34a;
@@ -94,4 +147,104 @@
   font-size: 1.25rem;
   font-weight: 500;
   word-break: break-all;
+}
+
+/* Chat styles */
+.chat-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  min-height: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: white;
+}
+
+.chat-placeholder {
+  color: #9ca3af;
+  text-align: center;
+  font-size: 0.875rem;
+  margin: 2rem 0;
+}
+
+.chat-message {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.chat-message.user {
+  background: #e0e7ff;
+  border-left: 3px solid #6366f1;
+}
+
+.chat-message.assistant {
+  background: #f0fdf4;
+  border-left: 3px solid #22c55e;
+}
+
+.chat-message.thinking {
+  font-style: italic;
+}
+
+.chat-message.tool {
+  background: #f3e8ff;
+  border-left: 3px solid #a855f7;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.chat-role {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.chat-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tool-details {
+  margin-top: 0.5rem;
+}
+
+.tool-details summary {
+  cursor: pointer;
+  color: #7c3aed;
+  font-size: 0.75rem;
+}
+
+.tool-details pre {
+  margin: 0.25rem 0 0 0;
+  padding: 0.5rem;
+  background: #faf5ff;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  overflow-x: auto;
+}
+
+.chat-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.chat-input {
+  flex: 1;
+  min-width: 150px;
+}
+
+.chat-form .button {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
 }
