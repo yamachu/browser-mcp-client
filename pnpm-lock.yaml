@@ -4,6 +4,12 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    zod:
+      specifier: 3.25.76
+      version: 3.25.76
+
 importers:
 
   .:
@@ -58,7 +64,7 @@ importers:
         specifier: link:../native-messaging
         version: link:../native-messaging
       zod:
-        specifier: 3.25.76
+        specifier: 'catalog:'
         version: 3.25.76
     devDependencies:
       '@types/node':

@@ -7,3 +7,6 @@ packages:
 
 onlyBuiltDependencies:
   - esbuild
+
+catalog:
+  zod: 3.25.76
