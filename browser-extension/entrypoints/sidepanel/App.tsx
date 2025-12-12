@@ -1,43 +1,12 @@
-import { JWT_SNIFFER_HOSTS } from "@/src/Contract";
 import { sendTypedMessage } from "@/types/messaging";
-import { useActionState } from "react";
+import { use } from "react";
 import "./App.css";
+import ChatForm from "./components/ChatForm";
+import Settings from "./components/Settings";
 import { useChatStream, type ChatMessage } from "./hooks/useChatStream";
 import { useJwt } from "./hooks/useJwt";
-
-type State = {
-  result: string;
-  error: string | null;
-};
-
-async function reverseAction(
-  _prevState: State,
-  formData: FormData
-): Promise<State> {
-  const text = formData.get("text") as string;
-
-  if (!text?.trim()) {
-    return { result: "", error: "テキストを入力してください" };
-  }
-
-  try {
-    const response = await sendTypedMessage({
-      type: "REVERSE_STRING",
-      text,
-    });
-
-    if (response.success) {
-      return { result: response.reversed, error: null };
-    } else {
-      return { result: "", error: response.error };
-    }
-  } catch (err) {
-    return {
-      result: "",
-      error: err instanceof Error ? err.message : "Failed to send message",
-    };
-  }
-}
+import { LatestTargetHostProvider } from "./settings/LatestSelectedHost";
+import { SettingsContext, SettingsProvider } from "./settings/SettingsContext";
 
 function ChatMessageItem({
   message,
@@ -78,103 +47,34 @@ function ChatMessageItem({
   );
 }
 
-function App() {
-  const [state, formAction, isPending] = useActionState(reverseAction, {
-    result: "",
-    error: null,
-  });
-  const [currentHost, setCurrentHost] = useState(JWT_SNIFFER_HOSTS.at(0) || "");
-  const [apiBaseUrl, setApiBaseUrl] = useState("");
-  const [provider, setProvider] = useState<"openai" | "anthropic">("openai");
-  const [model, setModel] = useState("");
-  const [chatInput, setChatInput] = useState("");
-  const jwt = useJwt(currentHost);
+function AppInner() {
+  const { settings } = use(SettingsContext);
+  const jwt = useJwt(settings.currentHost);
   const { messages, isStreaming, appendUserMessage, isThinking } =
     useChatStream();
 
-  const handleChatSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim() || !jwt || isStreaming) return;
+  const handleChatSubmit = async (message: string) => {
+    if (!message.trim() || isStreaming) return;
+    if (jwt === null && settings.token === null) return;
 
-    appendUserMessage(chatInput);
-    const prompt = chatInput;
-    setChatInput("");
+    appendUserMessage(message);
 
-    try {
-      await sendTypedMessage({
-        type: "CHAT",
-        prompt,
-        jwt,
-        apiBaseUrl,
-        provider,
-        model: model,
-      });
-    } catch (err) {
-      console.error("Chat error:", err);
-    }
+    await sendTypedMessage({
+      type: "CHAT",
+      prompt: message,
+      jwt: settings.token ?? jwt!,
+      apiBaseUrl: settings.apiBaseUrl,
+      provider: settings.provider,
+      model: settings.model,
+      tools: [],
+    }).catch((err) => {
+      console.error("Chat message sending error:", err);
+    });
   };
 
   return (
     <div className="app">
-      <h1>Browser MCP Client</h1>
-
-      {/* JWT & Provider Settings */}
-      <section className="section">
-        <h2>Settings</h2>
-        <details>
-          <div className="settings-grid">
-            <label>
-              Host:
-              <select
-                value={currentHost}
-                onChange={(e) => setCurrentHost(e.target.value)}
-                className="host-select"
-              >
-                {JWT_SNIFFER_HOSTS.map((host) => (
-                  <option key={host} value={host}>
-                    {host}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <p className="jwt-display">
-              JWT: {jwt ? `${jwt.substring(0, 20)}...` : "<none>"}
-            </p>
-            <label>
-              API Base URL:
-              <input
-                type="text"
-                value={apiBaseUrl}
-                onChange={(e) => setApiBaseUrl(e.target.value)}
-                placeholder="https://your-proxy.example.com/v1"
-                className="input"
-              />
-            </label>
-            <label>
-              Provider:
-              <select
-                value={provider}
-                onChange={(e) =>
-                  setProvider(e.target.value as "openai" | "anthropic")
-                }
-              >
-                <option value="openai">OpenAI</option>
-                <option value="anthropic">Anthropic</option>
-              </select>
-            </label>
-            <label>
-              Model:
-              <input
-                type="text"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="gpt-4o / claude-3-5-sonnet-20241022"
-                className="input"
-              />
-            </label>
-          </div>
-        </details>
-      </section>
+      <Settings />
 
       {/* Chat Section */}
       <section className="section chat-section">
@@ -199,53 +99,18 @@ function App() {
           )}
         </div>
 
-        <form onSubmit={handleChatSubmit} className="chat-form">
-          <input
-            type="text"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            placeholder="メッセージを入力..."
-            className="input chat-input"
-            disabled={isStreaming || !jwt}
-          />
-          <button
-            type="submit"
-            className="button"
-            disabled={isStreaming || !jwt || !chatInput.trim()}
-          >
-            送信
-          </button>
-        </form>
+        <ChatForm disabled={isStreaming || !jwt} onSubmit={handleChatSubmit} />
       </section>
-
-      {/* String Reverser (legacy demo) */}
-      <details className="section">
-        <summary>String Reverser (Demo)</summary>
-        <p className="description">
-          Native Messaging を使用して文字列を反転します
-        </p>
-        <form action={formAction} className="form">
-          <input
-            type="text"
-            name="text"
-            placeholder="文字列を入力してください"
-            className="input"
-            disabled={isPending}
-          />
-          <button type="submit" className="button" disabled={isPending}>
-            {isPending ? "処理中..." : "反転"}
-          </button>
-        </form>
-        {state.error && <div className="error">{state.error}</div>}
-        {state.result && (
-          <div className="result">
-            <h3>結果:</h3>
-            <p className="result-text">{state.result}</p>
-          </div>
-        )}
-      </details>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <LatestTargetHostProvider>
+      <SettingsProvider>
+        <AppInner />
+      </SettingsProvider>
+    </LatestTargetHostProvider>
+  );
+}
