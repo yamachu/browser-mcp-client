@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 export const SettingsSchema = z.object({
-  apiBaseUrl: z.string(),
+  apiBaseUrl: z.string().trim().min(1),
   provider: z.enum(["openai", "anthropic"]),
-  model: z.string(),
+  model: z.string().trim().min(1),
   token: z.string().nullable(),
 });
 
