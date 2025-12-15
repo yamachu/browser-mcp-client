@@ -3,10 +3,12 @@ import { use } from "react";
 import { useChatStream, type ChatMessage } from "../hooks/useChatStream";
 import { useJwt } from "../hooks/useJwt";
 import { SettingsContext } from "../settings/SettingsContext";
+import { ToolsContext } from "../settings/ToolsContext";
 import ChatForm from "./ChatForm";
 
 export function Chat() {
   const { settings } = use(SettingsContext);
+  const { tools } = use(ToolsContext);
   const jwt = useJwt(settings.currentHost);
   const { messages, isStreaming, appendUserMessage, isThinking } =
     useChatStream();
@@ -24,7 +26,13 @@ export function Chat() {
       apiBaseUrl: settings.apiBaseUrl,
       provider: settings.provider,
       model: settings.model,
-      tools: [],
+      // TODO: schemaとかでいい感じに…
+      tools: tools.tools
+        .filter((tool) => tool.enabled)
+        .map((tool) => ({
+          id: tool.id,
+          ...JSON.parse(tool.json),
+        })),
     }).catch((err) => {
       console.error("Chat message sending error:", err);
     });

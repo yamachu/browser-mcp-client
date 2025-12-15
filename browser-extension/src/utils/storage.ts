@@ -3,6 +3,7 @@ import { SettingsSchema, type Settings } from "../schemas/settings";
 export const STORAGE_KEYS = {
   JWT: "jwt",
   AGENT: "agent",
+  TOOLS: "tools",
   LATEST_SELECTED_HOST: "latest_selected_host",
 } as const;
 
@@ -41,6 +42,30 @@ export async function getAgent(host: string): Promise<Settings | null> {
   try {
     const parsed = JSON.parse(value);
     return SettingsSchema.parse(parsed);
+  } catch {
+    return null;
+  }
+}
+
+export function toToolsStorageKey(): string {
+  return STORAGE_KEYS.TOOLS;
+}
+
+export async function saveTools(tools: unknown): Promise<void> {
+  await browser.storage.local.set({
+    [toToolsStorageKey()]: JSON.stringify(tools),
+  });
+}
+
+export async function getTools(): Promise<unknown | null> {
+  const key = toToolsStorageKey();
+  const result = await browser.storage.local.get(key);
+  const value = result[key];
+  if (typeof value !== "string") {
+    return null;
+  }
+  try {
+    return JSON.parse(value);
   } catch {
     return null;
   }

@@ -1,5 +1,6 @@
 import { JWT_SNIFFER_HOSTS } from "@/src/Contract";
 import { SettingsSchema } from "@/src/schemas/settings";
+import { ToolsSchema } from "@/src/schemas/tools";
 import { z } from "zod";
 
 export const FormSettingsSchema = SettingsSchema.extend({
@@ -33,4 +34,13 @@ export const DEFAULT_SETTINGS: Settings = {
   model: "",
   token: null,
   jwtAutoRefresh: true,
+};
+
+export const FormToolsSchema = ToolsSchema;
+
+export type Tools = z.input<typeof FormToolsSchema>;
+export type OutputTools = z.output<typeof FormToolsSchema>;
+
+export const DEFAULT_TOOLS: OutputTools = {
+  tools: [],
 };
