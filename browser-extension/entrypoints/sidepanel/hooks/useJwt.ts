@@ -5,6 +5,8 @@ type StorageChangeListener = Parameters<
   typeof browser.storage.onChanged.addListener
 >[0];
 
+// TODO: useJWTと言っているが、JWTじゃなかった場合にどうするか
+// TODO: JWTの有効期限切れとかも考慮して、null返すようにするとかもありかもしれん
 function createJwtStore(host: string) {
   const key = toJwtStorageKey(host);
   let currentValue: string | null = null;
